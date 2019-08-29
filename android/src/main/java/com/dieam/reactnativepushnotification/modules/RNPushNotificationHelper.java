@@ -15,6 +15,7 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.media.AudioAttributes;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
@@ -284,22 +285,22 @@ public class RNPushNotificationHelper {
                 Uri soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
                 String soundName = bundle.getString("soundName");
                 if (soundName != null) {
-                    if (!"default".equalsIgnoreCase(soundName)) {
-
-                        // sound name can be full filename, or just the resource name.
-                        // So the strings 'my_sound.mp3' AND 'my_sound' are accepted
-                        // The reason is to make the iOS and android javascript interfaces compatible
-
-                        int resId;
-                        if (context.getResources().getIdentifier(soundName, "raw", context.getPackageName()) != 0) {
-                            resId = context.getResources().getIdentifier(soundName, "raw", context.getPackageName());
-                        } else {
-                            soundName = soundName.substring(0, soundName.lastIndexOf('.'));
-                            resId = context.getResources().getIdentifier(soundName, "raw", context.getPackageName());
-                        }
-
-                        soundUri = Uri.parse("android.resource://" + context.getPackageName() + "/" + resId);
+                    if ("default".equalsIgnoreCase(soundName)) {
+                        soundName = "notification_sound";
                     }
+                    // sound name can be full filename, or just the resource name.
+                    // So the strings 'my_sound.mp3' AND 'my_sound' are accepted
+                    // The reason is to make the iOS and android javascript interfaces compatible
+
+                    int resId;
+                    if (context.getResources().getIdentifier(soundName, "raw", context.getPackageName()) != 0) {
+                        resId = context.getResources().getIdentifier(soundName, "raw", context.getPackageName());
+                    } else {
+                        soundName = soundName.substring(0, soundName.lastIndexOf('.'));
+                        resId = context.getResources().getIdentifier(soundName, "raw", context.getPackageName());
+                    }
+
+                    soundUri = Uri.parse("android.resource://" + context.getPackageName() + "/" + resId);
                 }
                 notification.setSound(soundUri);
             }
@@ -597,6 +598,15 @@ public class RNPushNotificationHelper {
         channel.setDescription(this.config.getChannelDescription());
         channel.enableLights(true);
         channel.enableVibration(true);
+        int resId = context.getResources().getIdentifier("notification_sound", "raw", context.getPackageName());
+        if (resId != 0) {
+            Uri soundUri = Uri.parse("android.resource://" + context.getPackageName() + "/" + resId);
+            AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                        .build();
+            channel.setSound(soundUri, audioAttributes);
+        }
 
         manager.createNotificationChannel(channel);
         channelCreated = true;
